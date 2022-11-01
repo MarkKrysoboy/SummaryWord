@@ -3,29 +3,65 @@
  */
 package com.heter;
 
-import org.apache.poi.hwpf.HWPFDocument;
+import org.apache.commons.math3.util.IntegerSequence;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFTable;
+import org.apache.poi.xwpf.usermodel.XWPFTableCell;
+import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 public class App {
 
-    public File wordredaction(File oldFile) {
-        File newFile = null;
+    public static void wordredaction(File oldFile) {
         try (FileInputStream fileInputStream = new FileInputStream(oldFile);
-             HWPFDocument document = new HWPFDocument(fileInputStream)) {
+             XWPFDocument document = new XWPFDocument(fileInputStream)) {
+            List<XWPFTable> tableList = document.getTables();
+            Iterator tableIterator = tableList.listIterator();
+            tableIterator.next();
 
+            while (tableIterator.hasNext()) {
+                XWPFTable table = (XWPFTable) tableIterator.next();
+                List<XWPFTableRow> rowList = table.getRows();
+                Iterator rowIterator = rowList.listIterator();
+                while (rowIterator.hasNext()){
+                    XWPFTableRow tableRow = (XWPFTableRow) rowIterator.next();
+                    List<XWPFTableCell> cellList = tableRow.getTableCells();
+                    Iterator cellIterator = cellList.listIterator();
+                    while (cellIterator.hasNext()){
+                        XWPFTableCell tableCell = (XWPFTableCell) cellIterator.next();
+                        String text = tableCell.getText();
+                        System.out.println(text);
+                        if (text.contains("NTCN")){
+                            table.removeRow(rowList.indexOf(tableRow));
+                            cellIterator.remove();
+//                            rowIterator.next();
+                            System.out.println("String " + rowList.indexOf(tableRow)+ " remove");
+                        }
+                    }
 
+                }
+
+            }
+            document.removeBodyElement(document.getPosOfTable(tableList.get(1)));
+            try (FileOutputStream out = new FileOutputStream(oldFile)) {
+                document.write(out);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return newFile;
     }
 
-
     public static void main(String[] args) {
-
+        wordredaction(new File("d:\\User\\JavaProjects\\SummaryWord\\20220904.docx"));
 
     }
 }
